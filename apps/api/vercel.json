@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "buildCommand": "pnpm --filter @smartpay/api build",
+  "functions": {
+    "api/index.ts": {
+      "runtime": "@vercel/node@5.8.4"
+    }
+  },
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/index.ts"
+    }
+  ]
+}

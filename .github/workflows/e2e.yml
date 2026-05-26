@@ -1,0 +1,65 @@
+name: e2e
+
+on:
+  pull_request:
+    paths:
+      - "apps/**"
+      - "packages/**"
+      - "playwright.config.ts"
+      - ".github/workflows/e2e.yml"
+  workflow_dispatch:
+
+jobs:
+  playwright:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: smartpay
+          POSTGRES_PASSWORD: smartpay
+          POSTGRES_DB: smartpay
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U smartpay -d smartpay"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+      redis:
+        image: redis:8-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.3.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run e2e
+        env:
+          APP_MODE: debug
+          DATABASE_URL: postgres://smartpay:smartpay@localhost:5432/smartpay
+          REDIS_URL: redis://localhost:6379
+          NEXT_PUBLIC_API_BASE_URL: http://localhost:8787
+        run: pnpm test:e2e

@@ -1,0 +1,26 @@
+.page {
+  display: flex;
+  min-height: 100vh;
+  flex-direction: column;
+  justify-content: center;
+  gap: 20px;
+  padding: 48px;
+}
+
+.eyebrow {
+  color: #0f766e;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.title {
+  color: #15181d;
+  font-size: 46px;
+  font-weight: 700;
+}
+
+.body {
+  color: #5b6573;
+  font-size: 28px;
+  line-height: 42px;
+}

@@ -1,0 +1,17 @@
+{
+  "name": "@smartpay/mock-data",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
+    "seed": "node -e \"console.log('Mock seed data is stored in packages/mock-data/scenarios')\""
+  },
+  "dependencies": {
+    "@smartpay/contracts": "workspace:*"
+  }
+}

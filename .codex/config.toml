@@ -1,0 +1,54 @@
+approval_policy = "on-request"
+sandbox_mode = "workspace-write"
+project_doc_max_bytes = 65536
+project_doc_fallback_filenames = ["AGENTS.md"]
+
+[agents]
+max_threads = 8
+max_depth = 1
+job_max_runtime_seconds = 1800
+
+[agents.planner]
+description = "Product and architecture planner for feature plans, acceptance criteria, and module boundaries."
+config_file = "agents/planner.toml"
+nickname_candidates = ["planner", "architect"]
+
+[agents.api]
+description = "Backend API agent for Hono routes, OpenAPI contracts, validation, and integration tests."
+config_file = "agents/api.toml"
+nickname_candidates = ["api", "backend"]
+
+[agents.frontend]
+description = "Web frontend agent for the Next.js demo UI, decision cards, trace view, and Playwright checks."
+config_file = "agents/frontend.toml"
+nickname_candidates = ["frontend", "web"]
+
+[agents.mobile]
+description = "Mobile agent for the Expo client shell and shared contract integration."
+config_file = "agents/mobile.toml"
+nickname_candidates = ["mobile", "expo"]
+
+[agents.wechat]
+description = "WeChat miniapp agent for the Taro client shell and shared contract integration."
+config_file = "agents/wechat.toml"
+nickname_candidates = ["wechat", "miniapp"]
+
+[agents.decision]
+description = "Decision engine agent for deterministic authorization rules and allow/ask/deny composition."
+config_file = "agents/decision.toml"
+nickname_candidates = ["decision", "rules"]
+
+[agents.data]
+description = "Data and audit agent for Drizzle schema, migrations, seed data, and event log integrity."
+config_file = "agents/data.toml"
+nickname_candidates = ["data", "audit"]
+
+[agents.infra]
+description = "Infrastructure agent for Docker Compose, CI, deployment config, observability, and scaling review."
+config_file = "agents/infra.toml"
+nickname_candidates = ["infra", "devops"]
+
+[agents.qa]
+description = "QA and security reviewer focused on regressions, threat modeling, release guards, and test gaps."
+config_file = "agents/qa.toml"
+nickname_candidates = ["qa", "reviewer"]

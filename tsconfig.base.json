@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "isolatedModules": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "ignoreDeprecations": "6.0",
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "baseUrl": ".",
+    "paths": {
+      "@smartpay/contracts": ["packages/contracts/src/index.ts"],
+      "@smartpay/domain": ["packages/domain/src/index.ts"],
+      "@smartpay/rules": ["packages/rules/src/index.ts"],
+      "@smartpay/db": ["packages/db/src/index.ts"],
+      "@smartpay/mock-data": ["packages/mock-data/src/index.ts"]
+    }
+  }
+}

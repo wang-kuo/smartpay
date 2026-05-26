@@ -1,0 +1,92 @@
+{
+  "now": "2026-05-26T00:00:00.000Z",
+  "profile": {
+    "userId": "user_001",
+    "profileTags": ["travel-positive", "budget-aware", "prefers-convenience"],
+    "avatarState": {
+      "mood": "cautious",
+      "message": "Your Japan trip is possible if onsite spending stays controlled."
+    },
+    "dimensions": {
+      "budgetDiscipline": "medium",
+      "travelPreference": "high",
+      "priceSensitivity": "medium",
+      "automationComfort": "medium"
+    }
+  },
+  "goalContext": {
+    "monthlyBudget": 3200,
+    "availableTravelBudget": 2500,
+    "longTermSavingsGoal": {
+      "name": "Emergency fund",
+      "targetAmount": 10000,
+      "currentAmount": 6200
+    },
+    "goalImpact": "Japan trip is affordable if total cost stays below S$2500."
+  },
+  "authorization": {
+    "authorizationId": "auth_japan_trip_001",
+    "type": "temporary",
+    "category": "Travel",
+    "maxSingleAmount": 1200,
+    "maxTotalAmount": 2500,
+    "autoExecutionMaxAmount": 1200,
+    "currency": "SGD",
+    "validUntil": "2026-06-30",
+    "executionFrequency": {
+      "maxCount": 6,
+      "usedCount": 0,
+      "window": "trip"
+    },
+    "executionMode": "manual_or_auto_by_amount"
+  },
+  "consumptionRequest": {
+    "requestId": "req_japan_hotel_001",
+    "userId": "user_001",
+    "agentId": "travel_agent",
+    "category": "Travel",
+    "purpose": "Book hotel for Japan trip",
+    "amount": 980,
+    "currency": "SGD"
+  },
+  "quotes": {
+    "officialQuote": {
+      "quoteId": "quote_hotel_001",
+      "source": "mock_merchant_mcp",
+      "merchantName": "Tokyo Stay Hotel",
+      "amount": 980,
+      "currency": "SGD",
+      "isExecutable": true
+    },
+    "marketIntelligence": {
+      "source": "mock_consumer_agent_network",
+      "marketAverage": 910,
+      "priceRange": {
+        "low": 820,
+        "high": 1100
+      },
+      "signal": "within_market_range"
+    }
+  },
+  "fitCheck": {
+    "fitCheck": "pass",
+    "softRisks": ["Hotel cost is within the expected range for a 5-7 day Japan trip."],
+    "explanation": "This booking fits the user's Japan trip goal and stays within the authorized travel budget."
+  },
+  "execution": {
+    "executionId": "exec_hotel_001",
+    "orderStatus": "confirmed",
+    "paymentStatus": "simulated_paid",
+    "merchantOrderId": "mock_order_001",
+    "walletPaymentId": "mock_wallet_payment_001"
+  },
+  "feedback": {
+    "feedbackId": "feedback_001",
+    "executionId": "exec_hotel_001",
+    "userFeedback": "This matched my plan.",
+    "contextSignals": [
+      "user_accepts_mid_range_hotel_for_japan_trip",
+      "travel_auto_execution_confidence_increased"
+    ]
+  }
+}

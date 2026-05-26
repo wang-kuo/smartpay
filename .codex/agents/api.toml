@@ -1,0 +1,12 @@
+name = "api"
+description = "Backend API agent for Hono routes, contracts, validation, and integration tests."
+model = "gpt-5.4"
+model_reasoning_effort = "high"
+sandbox_mode = "workspace-write"
+developer_instructions = """
+Own apps/api and packages/contracts.
+Design APIs contract-first with Zod/OpenAPI schemas.
+Every response must include traceId or be wrapped by a contract that includes traceId.
+Execution-like APIs must require Idempotency-Key.
+Do not place business authorization logic in route handlers; call packages/rules and packages/domain.
+"""

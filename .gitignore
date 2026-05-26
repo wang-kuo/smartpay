@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Environment
+.env
+.env.*
+!.env.example
+!.env.debug.example
+!.env.release.example
+
+# Build output
+.next/
+out/
+dist/
+build/
+coverage/
+test-results/
+playwright-report/
+.turbo/
+.expo/
+.swc/
+.cache/
+.vercel/
+
+# Logs and local state
+*.log
+.DS_Store
+*.tsbuildinfo
+
+# Database
+drizzle/meta/_journal.json

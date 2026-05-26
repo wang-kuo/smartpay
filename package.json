@@ -1,0 +1,41 @@
+{
+  "name": "smartpay",
+  "version": "0.1.0",
+  "private": true,
+  "description": "API-first multi-client consumption decision agent demo.",
+  "license": "MIT",
+  "packageManager": "pnpm@11.3.0",
+  "engines": {
+    "node": ">=22.0.0",
+    "pnpm": ">=11.0.0"
+  },
+  "scripts": {
+    "dev": "corepack pnpm -r --parallel --filter @smartpay/api --filter @smartpay/web dev",
+    "dev:api": "corepack pnpm --filter @smartpay/api dev",
+    "dev:web": "corepack pnpm --filter @smartpay/web dev",
+    "dev:mobile": "corepack pnpm --filter @smartpay/mobile dev",
+    "dev:wechat": "corepack pnpm --filter @smartpay/wechat-miniapp dev",
+    "build": "corepack pnpm -r --if-present build",
+    "lint": "eslint .",
+    "typecheck": "corepack pnpm -r --if-present typecheck",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:seed": "corepack pnpm --filter @smartpay/mock-data seed",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.60.0",
+    "@types/node": "^25.9.1",
+    "drizzle-kit": "^0.31.10",
+    "eslint": "^10.4.0",
+    "prettier": "^3.8.3",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.60.0",
+    "vitest": "^4.1.7"
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "name": "@smartpay/rules",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run src/**/*.test.ts"
+  },
+  "dependencies": {
+    "@smartpay/contracts": "workspace:*",
+    "@smartpay/domain": "workspace:*"
+  }
+}

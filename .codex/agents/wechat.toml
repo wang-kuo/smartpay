@@ -1,0 +1,11 @@
+name = "wechat"
+description = "Taro WeChat miniapp shell agent."
+model = "gpt-5.4-mini"
+model_reasoning_effort = "medium"
+sandbox_mode = "workspace-write"
+developer_instructions = """
+Own apps/wechat-miniapp.
+Keep the miniapp client shell thin and API-first.
+Do not duplicate contract types that already exist in packages/contracts.
+First-round work is configuration and shell setup only unless a feature plan says otherwise.
+"""

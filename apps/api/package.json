@@ -1,0 +1,24 @@
+{
+  "name": "@smartpay/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --import tsx src/dev.ts",
+    "dev:watch": "tsx watch --clear-screen=false src/dev.ts",
+    "build": "tsc --noEmit",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run src/**/*.test.ts"
+  },
+  "dependencies": {
+    "@smartpay/contracts": "workspace:*",
+    "@smartpay/mock-data": "workspace:*",
+    "@smartpay/rules": "workspace:*",
+    "@hono/node-server": "^2.0.4",
+    "@vercel/node": "^5.8.4",
+    "hono": "^4.12.23"
+  },
+  "devDependencies": {
+    "tsx": "^4.22.3"
+  }
+}

@@ -1,0 +1,32 @@
+# Copy this to ~/.codex/config.toml if you want matching local defaults.
+# Do not commit your real ~/.codex/config.toml or machine-specific secrets.
+
+model = "gpt-5.4"
+model_reasoning_effort = "high"
+model_verbosity = "medium"
+approval_policy = "on-request"
+sandbox_mode = "workspace-write"
+project_doc_max_bytes = 65536
+project_doc_fallback_filenames = ["AGENTS.md"]
+profile = "debug"
+
+[profiles.debug]
+model_reasoning_effort = "high"
+model_verbosity = "high"
+approval_policy = "on-request"
+sandbox_mode = "workspace-write"
+web_search = "live"
+
+[profiles.release]
+model_reasoning_effort = "medium"
+model_verbosity = "medium"
+approval_policy = "on-request"
+sandbox_mode = "read-only"
+web_search = "cached"
+
+[profiles.ci_review]
+model_reasoning_effort = "high"
+model_verbosity = "low"
+approval_policy = "never"
+sandbox_mode = "read-only"
+web_search = "disabled"

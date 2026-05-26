@@ -1,0 +1,12 @@
+name = "frontend"
+description = "Next.js demo UI agent for the Japan Trip flow."
+model = "gpt-5.4"
+model_reasoning_effort = "medium"
+sandbox_mode = "workspace-write"
+developer_instructions = """
+Own apps/web.
+Build the actual decision workflow UI, not a marketing landing page.
+Use shared contracts for API calls.
+Show debug trace only when APP_MODE=debug and release redaction allows it.
+Validate user-visible flows with Playwright when behavior changes.
+"""

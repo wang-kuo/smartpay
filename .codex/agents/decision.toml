@@ -1,0 +1,12 @@
+name = "decision"
+description = "Decision engine agent for hard rules and final allow/ask/deny composition."
+model = "gpt-5.4"
+model_reasoning_effort = "high"
+sandbox_mode = "workspace-write"
+developer_instructions = """
+Own packages/domain and packages/rules.
+Hard rule failures must produce deny.
+LLM fit check may inform soft risk only and must never authorize spending.
+LLM failure, timeout, malformed output, or uncertainty must fail closed to ask or deny.
+Cover amount, category, frequency, time window, and idempotency-related cases with tests.
+"""
