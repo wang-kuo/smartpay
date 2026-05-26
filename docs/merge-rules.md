@@ -7,6 +7,9 @@
 - `feat/api-services` owns Hono routes, request validation, release/debug handling, and API tests.
 - `feat/clients-docs` owns web/mobile/WeChat shells, docs, Playwright coverage, and generation logs.
 
+When these modules are generated in multiple terminals, each terminal must own exactly one worktree
+or one long-running server/validation command. See `docs/multiple-terminal-rules.md`.
+
 ## Merge Gate
 
 1. Keep the product flow as authorization -> decision -> execution.
@@ -19,6 +22,8 @@
 8. Stacked modules must first merge latest `main` into their worktree before implementation or final commit.
 9. Resolve conflicts in favor of `packages/contracts` as the wire-shape source of truth.
 10. Run validation in this order after the final merge: lint, typecheck, unit/integration tests, build, e2e.
+11. Do not run concurrent commits, merges, rebases, or pushes from two terminals on the same branch.
+12. Before final merge or push, verify no stale dev server is being reused for validation.
 
 ## Module Order
 

@@ -59,6 +59,24 @@ Every feature follows:
 2. Generate: implement the smallest vertical slice behind typed contracts.
 3. Review/test: run lint, typecheck, unit/integration tests, and Playwright when UI behavior changes.
 
+## Multiple Terminal Rules
+
+- Use multiple terminals only for independent workstreams: one terminal per long-running server,
+  validation command, or isolated module worktree.
+- Give every terminal a clear ownership boundary: working directory, branch/worktree, module, and
+  purpose.
+- Do not edit the same file or package from two terminals at the same time. If ownership overlaps,
+  stop one terminal and synchronize through git first.
+- Use separate git worktrees for parallel module generation. Do not run concurrent commits, merges,
+  rebases, or pushes from the same branch.
+- Keep long-running dev servers in dedicated terminals. Before Playwright or manual QA, confirm no
+  stale server is occupying the expected port.
+- Before merging or pushing, run `git status --short --branch`, verify no secrets or unrelated
+  untracked files are staged, and run final validation from the main workspace.
+- Record multi-terminal generation, merge, and test activity in `docs/generation-log.md` when it is
+  part of a planned feature build.
+- See `docs/multiple-terminal-rules.md` for the detailed operating rules.
+
 ## Commands
 
 - `pnpm install`

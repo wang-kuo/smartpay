@@ -14,6 +14,8 @@
 3. Add storage in `packages/db` only when persistence is required.
 4. Wire `apps/api` after contracts and rules exist.
 5. Wire clients only through shared contracts.
+6. When using multiple terminals, follow `docs/multiple-terminal-rules.md`: one terminal per
+   isolated server, validation command, or module worktree.
 
 ## Review/Test
 
@@ -22,6 +24,8 @@
 3. Run `pnpm test`.
 4. Run `pnpm test:e2e` when UI or end-to-end behavior changes.
 5. Review debug/release mode behavior before merging.
+6. If parallel worktrees or multiple terminals were used, record generation, merge, retry, and test
+   results in `docs/generation-log.md`.
 
 ## Adding A New Feature
 
