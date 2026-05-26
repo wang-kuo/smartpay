@@ -10,9 +10,13 @@ Request:
 {
   "userId": "user_001",
   "scenario": "japan_trip",
+  "variant": "allow",
   "request": "Plan and book a Japan trip for 5-7 days within S$2000-2500."
 }
 ```
+
+`variant` can be `allow`, `ask`, `deny`, or `missing_fit_check` for deterministic demo and test
+coverage.
 
 Response includes:
 
@@ -27,9 +31,12 @@ Response includes:
 - `execution`
 - `feedbackPrompt`
 - `events`
-- `debug`
+- `debug` in `APP_MODE=debug`
 
 The final decision is always `allow`, `ask`, or `deny`.
+In `APP_MODE=release`, debug data is omitted and event payloads are redacted.
+If `REAL_PAYMENTS_ENABLED=true`, the demo endpoint refuses execution with
+`real_payments_disabled` because the Japan Trip flow is mock-only.
 
 ## Reserved Module APIs
 

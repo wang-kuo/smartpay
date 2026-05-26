@@ -1,11 +1,15 @@
 import { StatusBar } from "expo-status-bar";
 import { StyleSheet, Text, View } from "react-native";
+import type { DemoDecisionFlowVariant } from "@smartpay/contracts";
+
+const defaultVariant: DemoDecisionFlowVariant = "allow";
 
 export default function App() {
   return (
     <View style={styles.container}>
       <Text style={styles.eyebrow}>SmartPay mobile shell</Text>
       <Text style={styles.title}>Japan Trip Decision Flow</Text>
+      <Text style={styles.badge}>Default variant: {defaultVariant}</Text>
       <Text style={styles.body}>
         Mobile support is configured for the shared API contract. The first business demo remains
         on web.
@@ -39,5 +43,16 @@ const styles = StyleSheet.create({
     color: "#5b6573",
     fontSize: 16,
     lineHeight: 24
+  },
+  badge: {
+    alignSelf: "flex-start",
+    marginTop: 16,
+    borderRadius: 8,
+    backgroundColor: "#d9f4ee",
+    color: "#0f766e",
+    fontSize: 14,
+    fontWeight: "700",
+    paddingHorizontal: 10,
+    paddingVertical: 6
   }
 });
