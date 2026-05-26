@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   demoAuthSessionRequestSchema,
   demoAuthSessionResponseSchema,
+  demoEmailCodeRequestSchema,
+  demoInviteRequestSchema,
   demoDecisionFlowRequestSchema,
   demoInteractiveDecisionResponseSchema,
   demoInteractiveDecisionRequestSchema,
@@ -43,19 +45,29 @@ describe("SmartPay shared contracts", () => {
   });
 
   it("validates demo auth sessions and admin-only token shape", () => {
+    const inviteRequest = demoInviteRequestSchema.parse({
+      email: "user@example.com"
+    });
+    const codeRequest = demoEmailCodeRequestSchema.parse({
+      email: inviteRequest.email,
+      inviteCode: "INV-USER-123456"
+    });
     const request = demoAuthSessionRequestSchema.parse({
       email: "admin@smartpay.local",
-      password: "local-password"
+      verificationCode: "123456",
+      username: "Admin"
     });
     const response = demoAuthSessionResponseSchema.parse({
       traceId: "trace_auth_contract",
       session: {
         email: request.email,
+        username: request.username,
         role: "admin",
         adminToken: "token"
       }
     });
 
+    expect(codeRequest.inviteCode).toBe("INV-USER-123456");
     expect(response.session.role).toBe("admin");
     expect(response.session.adminToken).toBe("token");
   });

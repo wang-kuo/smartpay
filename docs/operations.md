@@ -61,14 +61,14 @@ The local admin account is configured through ignored secrets:
 
 ```bash
 mkdir -p secrets
-printf 'DEMO_ADMIN_EMAIL=admin@smartpay.local\nDEMO_ADMIN_PASSWORD=change_me\nDEMO_ADMIN_TOKEN=change_me_token\n' > secrets/admin.env
+printf 'DEMO_ADMIN_EMAIL=admin@smartpay.local\nAUTH_SESSION_SECRET=change_me_session_secret\n' > secrets/admin.env
 pnpm dev
 ```
 
 Only admin sessions receive `session.adminToken`. The web admin page sends it as
 `X-Demo-Admin-Token`; the API returns debug payloads, structured analysis, LLM status, and trace
-details only when that token matches. This is demo-only local auth, not a production identity
-provider.
+details only when that signed session token is valid. Email delivery requires `SMTP_HOST` and
+`SMTP_FROM` plus provider credentials when required by the SMTP server.
 
 ## Environment Modes
 

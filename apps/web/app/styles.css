@@ -172,7 +172,8 @@ dt {
 }
 
 .variant-button,
-.run-button {
+.run-button,
+.secondary-button {
   min-height: 42px;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -215,6 +216,17 @@ dt {
   padding: 0 18px;
   background: var(--ink);
   color: #ffffff;
+}
+
+.secondary-button {
+  padding: 0 14px;
+  background: var(--teal-soft);
+  color: var(--teal);
+}
+
+.notice-line {
+  color: var(--teal) !important;
+  font-weight: 700;
 }
 
 .text-button {
@@ -439,6 +451,27 @@ dd {
   font-size: 13px;
 }
 
+.table-list {
+  display: grid;
+  gap: 8px;
+}
+
+.table-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.4fr) minmax(100px, 0.8fr) minmax(70px, 0.4fr) minmax(80px, 0.4fr);
+  gap: 10px;
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 8px;
+}
+
+.table-row code,
+.table-row span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
+
 .rule-list p {
   color: var(--muted);
   font-size: 14px;
@@ -494,8 +527,13 @@ dd {
   }
 
   .variant-button,
-  .run-button {
+  .run-button,
+  .secondary-button {
     flex: 1 1 140px;
+  }
+
+  .table-row {
+    grid-template-columns: 1fr;
   }
 
   .message {

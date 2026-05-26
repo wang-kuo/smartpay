@@ -9,7 +9,8 @@ Request:
 ```json
 {
   "email": "demo@example.com",
-  "password": "only-required-for-admin"
+  "verificationCode": "123456",
+  "username": "Demo User"
 }
 ```
 
@@ -25,8 +26,8 @@ Response:
 }
 ```
 
-Admin login uses `DEMO_ADMIN_EMAIL`, `DEMO_ADMIN_PASSWORD`, and `DEMO_ADMIN_TOKEN` from local
-secrets or environment variables. Admin responses include `session.adminToken`; clients send that
+Login uses a real emailed verification code. Admin login uses `DEMO_ADMIN_EMAIL` from local secrets
+or environment variables. Admin responses include a signed `session.adminToken`; clients send that
 token as `X-Demo-Admin-Token` to unlock admin-only debug and analysis fields.
 
 ## Main Demo Endpoint
@@ -60,7 +61,7 @@ Response includes:
 - `execution`
 - `feedbackPrompt`
 - `events`
-- `debug` only in `APP_MODE=debug` and only when `X-Demo-Admin-Token` matches the local admin token
+- `debug` only in `APP_MODE=debug` and only when `X-Demo-Admin-Token` is a valid admin session token
 
 The final decision is always `allow`, `ask`, or `deny`.
 In `APP_MODE=release`, debug data is omitted and event payloads are redacted.
@@ -87,8 +88,8 @@ Response includes every field from the main decision-flow response plus:
 - `interaction.email`
 - `interaction.message`
 - `interaction.summary`
-- `interaction.analysis` only when `X-Demo-Admin-Token` matches the local admin token
-- `interaction.llm` only when `X-Demo-Admin-Token` matches the local admin token
+- `interaction.analysis` only when `X-Demo-Admin-Token` is a valid admin session token
+- `interaction.llm` only when `X-Demo-Admin-Token` is a valid admin session token
 
 The server may use `DEEPSEEK_API_KEY` through LangChain for structured fit-check analysis. If the key
 is absent, the DeepSeek call times out, or the output fails schema validation, the endpoint uses a

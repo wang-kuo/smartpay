@@ -18,7 +18,9 @@ function readLocalSecret(name: string): string | undefined {
   return line?.slice(name.length + 1).trim().replace(/^["']|["']$/g, "");
 }
 
-test("runs the public Japan Trip chat flow without admin panels", async ({ page, request }) => {
+test("runs the public Japan Trip chat flow without admin panels", async ({ page, request }, testInfo) => {
+  test.skip(!process.env.SMTP_HOST || !process.env.SMTP_FROM, "SMTP settings are required for email-code e2e.");
+
   await expect(async () => {
     const response = await request.get("http://localhost:8787/api/health");
     expect(response.ok()).toBe(true);
@@ -28,7 +30,13 @@ test("runs the public Japan Trip chat flow without admin panels", async ({ page,
   await page.goto("/");
 
   await expect(page.getByRole("heading", { name: "Japan Trip Decision Flow" })).toBeVisible();
-  await page.getByLabel("Email").fill("demo@example.com");
+  await page
+    .getByRole("textbox", { name: "Email", exact: true })
+    .fill(`demo-public-${testInfo.project.name}@example.com`);
+  await page.getByRole("button", { name: "Request invite" }).click();
+  await expect(page.getByText("Invite code generated")).toBeVisible();
+  await page.getByRole("button", { name: "Send email code" }).click();
+  await expect(page.getByText("Verification code issued")).toBeVisible();
   await page.getByRole("button", { name: "Continue" }).click();
 
   await expect(page.getByText("What would you like to do today?")).toBeVisible();
@@ -40,9 +48,9 @@ test("runs the public Japan Trip chat flow without admin panels", async ({ page,
 });
 
 test("runs the admin backend flow with analysis and debug panels", async ({ page, request }) => {
-  const adminEmail = readLocalSecret("DEMO_ADMIN_EMAIL") ?? "admin@smartpay.local";
-  const adminPassword = readLocalSecret("DEMO_ADMIN_PASSWORD");
-  test.skip(!adminPassword, "secrets/admin.env is required for the local admin e2e flow.");
+  test.skip(!process.env.SMTP_HOST || !process.env.SMTP_FROM, "SMTP settings are required for email-code e2e.");
+
+  const adminEmail = readLocalSecret("DEMO_ADMIN_EMAIL") ?? "wangkuo0606@gmail.com";
 
   await expect(async () => {
     const response = await request.get("http://localhost:8787/api/health");
@@ -53,8 +61,9 @@ test("runs the admin backend flow with analysis and debug panels", async ({ page
   await page.goto("/admin");
 
   await expect(page.getByRole("heading", { name: "Japan Trip Decision Flow" })).toBeVisible();
-  await page.getByLabel("Email").fill(adminEmail);
-  await page.getByLabel("Password").fill(adminPassword ?? "");
+  await page.getByRole("textbox", { name: "Email", exact: true }).fill(adminEmail);
+  await page.getByRole("button", { name: "Send email code" }).click();
+  await expect(page.getByText("Verification code issued")).toBeVisible();
   await page.getByRole("button", { name: "Continue" }).click();
 
   await expect(page.getByText("Structured analysis")).toBeVisible();
@@ -75,4 +84,6 @@ test("runs the admin backend flow with analysis and debug panels", async ({ page
   await expect(page.getByTestId("decision-badge")).toHaveText("ask");
 
   await expect(page.getByText("Debug rules")).toBeVisible();
+  await expect(page.getByText("Users", { exact: true })).toBeVisible();
+  await expect(page.getByText("System logs")).toBeVisible();
 });

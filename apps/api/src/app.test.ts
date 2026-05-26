@@ -1,13 +1,18 @@
 import { describe, expect, it } from "vitest";
 import {
+  demoAdminLogsResponseSchema,
+  demoAdminUsersResponseSchema,
   demoAuthSessionResponseSchema,
   demoDecisionFlowResponseSchema,
+  demoEmailCodeResponseSchema,
+  demoInviteResponseSchema,
   demoInteractiveDecisionResponseSchema,
   errorResponseSchema,
   type DemoDecisionFlowVariant
 } from "@smartpay/contracts";
 import { ADMIN_TOKEN_HEADER } from "./auth";
 import app from "./app";
+import { getInviteCodeForTest, getLatestVerificationCodeForTest } from "./runtime-state";
 
 function restoreEnv(name: string, value: string | undefined): void {
   if (value === undefined) {
@@ -36,19 +41,63 @@ async function postDecisionFlow(
 
 async function withDemoAdminEnv<T>(run: () => Promise<T>): Promise<T> {
   const originalEmail = process.env.DEMO_ADMIN_EMAIL;
-  const originalPassword = process.env.DEMO_ADMIN_PASSWORD;
-  const originalToken = process.env.DEMO_ADMIN_TOKEN;
+  const originalSessionSecret = process.env.AUTH_SESSION_SECRET;
+  const originalSmtpHost = process.env.SMTP_HOST;
+  const originalSmtpFrom = process.env.SMTP_FROM;
+  const originalEmailMode = process.env.EMAIL_DELIVERY_MODE;
   process.env.DEMO_ADMIN_EMAIL = "admin@example.com";
-  process.env.DEMO_ADMIN_PASSWORD = "correct-password";
-  process.env.DEMO_ADMIN_TOKEN = "admin-token";
+  process.env.AUTH_SESSION_SECRET = "test-session-secret";
+  process.env.EMAIL_DELIVERY_MODE = "json";
+  process.env.SMTP_FROM = "no-reply@smartpay.local";
 
   try {
     return await run();
   } finally {
     restoreEnv("DEMO_ADMIN_EMAIL", originalEmail);
-    restoreEnv("DEMO_ADMIN_PASSWORD", originalPassword);
-    restoreEnv("DEMO_ADMIN_TOKEN", originalToken);
+    restoreEnv("AUTH_SESSION_SECRET", originalSessionSecret);
+    restoreEnv("SMTP_HOST", originalSmtpHost);
+    restoreEnv("SMTP_FROM", originalSmtpFrom);
+    restoreEnv("EMAIL_DELIVERY_MODE", originalEmailMode);
   }
+}
+
+async function requestEmailCode(email: string, inviteCode?: string, traceId = "trace_code") {
+  const response = await app.request("/api/demo/auth/email-code/request", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Trace-Id": traceId
+    },
+    body: JSON.stringify({
+      email,
+      inviteCode
+    })
+  });
+  const body = demoEmailCodeResponseSchema.parse(await response.json());
+  return { response, body };
+}
+
+async function loginAdmin(traceId = "trace_admin_login"): Promise<string> {
+  const codeResponse = await requestEmailCode("admin@example.com", undefined, `${traceId}_code`);
+  expect(codeResponse.response.status).toBe(200);
+  const verificationCode = getLatestVerificationCodeForTest("admin@example.com");
+  expect(verificationCode).toEqual(expect.any(String));
+
+  const response = await app.request("/api/demo/auth/session", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Trace-Id": traceId
+    },
+    body: JSON.stringify({
+      email: "admin@example.com",
+      verificationCode
+    })
+  });
+  const body = demoAuthSessionResponseSchema.parse(await response.json());
+  expect(response.status).toBe(200);
+  expect(body.session.adminToken).toEqual(expect.any(String));
+  return body.session.adminToken!;
 }
 
 describe("Japan Trip decision-flow API", () => {
@@ -76,8 +125,38 @@ describe("Japan Trip decision-flow API", () => {
     });
   });
 
-  it("creates demo user sessions and admin sessions with a local token", async () => {
+  it("creates invited user sessions and admin sessions with mock email codes", async () => {
     await withDemoAdminEnv(async () => {
+      const inviteResponse = await app.request("/api/demo/invites/request", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Trace-Id": "trace_invite"
+        },
+        body: JSON.stringify({
+          email: "demo-user@example.com"
+        })
+      });
+      const inviteBody = demoInviteResponseSchema.parse(await inviteResponse.json());
+      expect(inviteResponse.status).toBe(200);
+      expect(inviteBody.user).toMatchObject({
+        email: "demo-user@example.com",
+        status: "invited"
+      });
+      expect(inviteBody.deliveryStatus).toBe("sent");
+      const inviteCode = getInviteCodeForTest("demo-user@example.com");
+      expect(inviteCode).toEqual(expect.any(String));
+
+      const code = await requestEmailCode(
+        "demo-user@example.com",
+        inviteCode,
+        "trace_user_code"
+      );
+      expect(code.response.status).toBe(200);
+      expect(code.body.deliveryStatus).toBe("sent");
+      const userVerificationCode = getLatestVerificationCodeForTest("demo-user@example.com");
+      expect(userVerificationCode).toEqual(expect.any(String));
+
       const userResponse = await app.request("/api/demo/auth/session", {
         method: "POST",
         headers: {
@@ -85,17 +164,25 @@ describe("Japan Trip decision-flow API", () => {
           "X-Trace-Id": "trace_user_login"
         },
         body: JSON.stringify({
-          email: "demo@example.com"
+          email: "demo-user@example.com",
+          verificationCode: userVerificationCode,
+          username: "Demo User"
         })
       });
       const userBody = demoAuthSessionResponseSchema.parse(await userResponse.json());
 
       expect(userResponse.status).toBe(200);
       expect(userBody.session).toMatchObject({
-        email: "demo@example.com",
+        email: "demo-user@example.com",
+        username: "Demo User",
         role: "user"
       });
       expect(userBody.session.adminToken).toBeUndefined();
+
+      const adminCode = await requestEmailCode("admin@example.com", undefined, "trace_admin_code");
+      expect(adminCode.response.status).toBe(200);
+      const adminVerificationCode = getLatestVerificationCodeForTest("admin@example.com");
+      expect(adminVerificationCode).toEqual(expect.any(String));
 
       const adminResponse = await app.request("/api/demo/auth/session", {
         method: "POST",
@@ -105,7 +192,7 @@ describe("Japan Trip decision-flow API", () => {
         },
         body: JSON.stringify({
           email: "admin@example.com",
-          password: "correct-password"
+          verificationCode: adminVerificationCode
         })
       });
       const adminBody = demoAuthSessionResponseSchema.parse(await adminResponse.json());
@@ -113,13 +200,14 @@ describe("Japan Trip decision-flow API", () => {
       expect(adminResponse.status).toBe(200);
       expect(adminBody.session).toMatchObject({
         email: "admin@example.com",
+        username: expect.any(String),
         role: "admin",
-        adminToken: "admin-token"
+        adminToken: expect.any(String)
       });
     });
   });
 
-  it("rejects invalid admin credentials", async () => {
+  it("rejects invalid email verification codes", async () => {
     await withDemoAdminEnv(async () => {
       const response = await app.request("/api/demo/auth/session", {
         method: "POST",
@@ -129,13 +217,39 @@ describe("Japan Trip decision-flow API", () => {
         },
         body: JSON.stringify({
           email: "admin@example.com",
-          password: "wrong-password"
+          verificationCode: "000000"
         })
       });
       const body = errorResponseSchema.parse(await response.json());
 
       expect(response.status).toBe(401);
-      expect(body.error.code).toBe("invalid_credentials");
+      expect(body.error.code).toBe("invalid_verification_code");
+    });
+  });
+
+  it("lets admins inspect users and runtime logs", async () => {
+    await withDemoAdminEnv(async () => {
+      const adminToken = await loginAdmin("trace_admin_list_login");
+
+      const usersResponse = await app.request("/api/demo/admin/users", {
+        headers: {
+          "X-Trace-Id": "trace_admin_users",
+          [ADMIN_TOKEN_HEADER]: adminToken
+        }
+      });
+      const usersBody = demoAdminUsersResponseSchema.parse(await usersResponse.json());
+      expect(usersResponse.status).toBe(200);
+      expect(usersBody.users.some((user) => user.email === "admin@example.com")).toBe(true);
+
+      const logsResponse = await app.request("/api/demo/admin/logs", {
+        headers: {
+          "X-Trace-Id": "trace_admin_logs",
+          [ADMIN_TOKEN_HEADER]: adminToken
+        }
+      });
+      const logsBody = demoAdminLogsResponseSchema.parse(await logsResponse.json());
+      expect(logsResponse.status).toBe(200);
+      expect(logsBody.logs.some((log) => log.source === "auth.session")).toBe(true);
     });
   });
 
@@ -158,12 +272,13 @@ describe("Japan Trip decision-flow API", () => {
     }
   );
 
-  it("only returns debug data to admin-token requests", async () => {
+  it("only returns debug data to admin session requests", async () => {
     await withDemoAdminEnv(async () => {
+      const adminToken = await loginAdmin("trace_admin_debug_login");
       const publicResponse = await postDecisionFlow({}, "trace_public_debug");
       const publicBody = demoDecisionFlowResponseSchema.parse(await publicResponse.json());
       const adminResponse = await postDecisionFlow({}, "trace_admin_debug", {
-        [ADMIN_TOKEN_HEADER]: "admin-token"
+        [ADMIN_TOKEN_HEADER]: adminToken
       });
       const adminBody = demoDecisionFlowResponseSchema.parse(await adminResponse.json());
 
@@ -252,18 +367,19 @@ describe("Japan Trip decision-flow API", () => {
     }
   });
 
-  it("returns interactive backend analysis only to admin-token requests", async () => {
+  it("returns interactive backend analysis only to admin session requests", async () => {
     const originalKey = process.env.DEEPSEEK_API_KEY;
     process.env.DEEPSEEK_API_KEY = "";
 
     try {
       await withDemoAdminEnv(async () => {
+        const adminToken = await loginAdmin("trace_interactive_admin_login");
         const response = await app.request("/api/demo/japan-trip/interactive-decision", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             "X-Trace-Id": "trace_interactive_admin",
-            [ADMIN_TOKEN_HEADER]: "admin-token"
+            [ADMIN_TOKEN_HEADER]: adminToken
           },
           body: JSON.stringify({
             email: "admin@example.com",

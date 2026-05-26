@@ -3,10 +3,16 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import {
+  demoAdminLogsResponseSchema,
+  demoAdminUsersResponseSchema,
   demoAuthSessionResponseSchema,
   demoDecisionFlowResponseSchema,
+  demoEmailCodeResponseSchema,
+  demoInviteResponseSchema,
   demoInteractiveDecisionResponseSchema,
   type DemoAuthSessionResponse,
+  type DemoAdminLogsResponse,
+  type DemoAdminUsersResponse,
   type DemoDecisionFlowResponse,
   type DemoDecisionFlowVariant,
   type DemoInteractiveDecisionResponse
@@ -20,6 +26,8 @@ type ChatMessage = {
 };
 type DemoFlowMode = "user" | "admin";
 type DemoSession = DemoAuthSessionResponse["session"];
+type DemoUser = DemoAdminUsersResponse["users"][number];
+type DemoLog = DemoAdminLogsResponse["logs"][number];
 
 const variants: Array<{
   value: DemoDecisionFlowVariant;
@@ -58,9 +66,12 @@ export function DemoFlow({
   const isAdminMode = mode === "admin";
   const storageKey = isAdminMode ? "smartpay.demo.adminSession" : "smartpay.demo.userSession";
   const [emailInput, setEmailInput] = useState(
-    isAdminMode ? "admin@smartpay.local" : "demo@example.com"
+    isAdminMode ? "wangkuo0606@gmail.com" : "demo@example.com"
   );
-  const [passwordInput, setPasswordInput] = useState("");
+  const [usernameInput, setUsernameInput] = useState("");
+  const [inviteCodeInput, setInviteCodeInput] = useState("");
+  const [verificationCodeInput, setVerificationCodeInput] = useState("");
+  const [authNotice, setAuthNotice] = useState<string | null>(null);
   const [session, setSession] = useState<DemoSession | null>(null);
   const [chatInput, setChatInput] = useState(
     "I want to book a 6 day Japan trip under S$2500."
@@ -70,6 +81,8 @@ export function DemoFlow({
   const [status, setStatus] = useState<FlowStatus>("idle");
   const [result, setResult] = useState<DisplayResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [adminUsers, setAdminUsers] = useState<DemoUser[]>([]);
+  const [adminLogs, setAdminLogs] = useState<DemoLog[]>([]);
 
   useEffect(() => {
     const storedSession = window.localStorage.getItem(storageKey);
@@ -80,6 +93,7 @@ export function DemoFlow({
         );
         if (parsed.success && parsed.data.role === mode) {
           setEmailInput(parsed.data.email);
+          setUsernameInput(parsed.data.username);
           setSession(parsed.data);
         } else {
           window.localStorage.removeItem(storageKey);
@@ -89,6 +103,103 @@ export function DemoFlow({
       }
     }
   }, [mode, storageKey]);
+
+  const loadAdminDebugData = useCallback(async () => {
+    if (!session?.adminToken) {
+      return;
+    }
+
+    const headers = {
+      "X-Trace-Id": createTraceId(),
+      "X-Demo-Admin-Token": session.adminToken
+    };
+    const [usersResponse, logsResponse] = await Promise.all([
+      fetch(`${apiBaseUrl}/api/demo/admin/users`, { headers }),
+      fetch(`${apiBaseUrl}/api/demo/admin/logs`, { headers })
+    ]);
+
+    if (usersResponse.ok) {
+      setAdminUsers(demoAdminUsersResponseSchema.parse(await usersResponse.json()).users);
+    }
+
+    if (logsResponse.ok) {
+      setAdminLogs(demoAdminLogsResponseSchema.parse(await logsResponse.json()).logs);
+    }
+  }, [apiBaseUrl, session?.adminToken]);
+
+  useEffect(() => {
+    if (isAdminMode && session?.adminToken) {
+      void loadAdminDebugData();
+    }
+  }, [isAdminMode, loadAdminDebugData, session?.adminToken]);
+
+  const requestInvite = async () => {
+    const normalizedEmail = emailInput.trim().toLowerCase();
+    if (!normalizedEmail) {
+      setError("Enter an email before requesting an invite.");
+      return;
+    }
+
+    setStatus("loading");
+    setError(null);
+    try {
+      const response = await fetch(`${apiBaseUrl}/api/demo/invites/request`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Trace-Id": createTraceId()
+        },
+        body: JSON.stringify({ email: normalizedEmail })
+      });
+      const payload = (await response.json()) as unknown;
+      if (!response.ok) {
+        throw new Error("Invite request failed.");
+      }
+
+      const parsed = demoInviteResponseSchema.parse(payload);
+      setUsernameInput(parsed.user.username);
+      setAuthNotice("Invite request submitted. Check your email for the invite code.");
+      setStatus("idle");
+    } catch (inviteError) {
+      setStatus("error");
+      setError(inviteError instanceof Error ? inviteError.message : "Invite request failed.");
+    }
+  };
+
+  const requestVerificationCode = async () => {
+    const normalizedEmail = emailInput.trim().toLowerCase();
+    if (!normalizedEmail) {
+      setError("Enter an email before requesting a code.");
+      return;
+    }
+
+    setStatus("loading");
+    setError(null);
+    try {
+      const response = await fetch(`${apiBaseUrl}/api/demo/auth/email-code/request`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Trace-Id": createTraceId()
+        },
+        body: JSON.stringify({
+          email: normalizedEmail,
+          inviteCode: isAdminMode ? undefined : inviteCodeInput.trim()
+        })
+      });
+      const payload = (await response.json()) as unknown;
+      if (!response.ok) {
+        throw new Error(isAdminMode ? "Email code request failed." : "Invite code is required.");
+      }
+
+      const parsed = demoEmailCodeResponseSchema.parse(payload);
+      setAuthNotice(`Verification code sent. It expires at ${new Date(parsed.expiresAt).toLocaleTimeString()}.`);
+      setStatus("idle");
+    } catch (codeError) {
+      setStatus("error");
+      setError(codeError instanceof Error ? codeError.message : "Email code request failed.");
+    }
+  };
 
   const runFixtureDecision = useCallback(
     async (variant: DemoDecisionFlowVariant) => {
@@ -142,7 +253,8 @@ export function DemoFlow({
         },
         body: JSON.stringify({
           email: normalizedEmail,
-          password: isAdminMode ? passwordInput : undefined
+          verificationCode: verificationCodeInput.trim(),
+          username: usernameInput.trim() || undefined
         })
       });
       const payload = (await response.json()) as unknown;
@@ -158,7 +270,9 @@ export function DemoFlow({
 
       window.localStorage.setItem(storageKey, JSON.stringify(parsed.session));
       setSession(parsed.session);
+      setUsernameInput(parsed.session.username);
       setStatus("idle");
+      setAuthNotice(null);
     } catch (loginError) {
       setStatus("error");
       setError(loginError instanceof Error ? loginError.message : "Login failed.");
@@ -225,6 +339,8 @@ export function DemoFlow({
     setSession(null);
     setMessages([]);
     setResult(null);
+    setAdminUsers([]);
+    setAdminLogs([]);
     setStatus("idle");
   };
 
@@ -252,29 +368,62 @@ export function DemoFlow({
             <input
               id="email"
               onChange={(event) => setEmailInput(event.target.value)}
-              placeholder="demo@example.com"
+              placeholder={isAdminMode ? "wangkuo0606@gmail.com" : "demo@example.com"}
               type="email"
               value={emailInput}
             />
-            {isAdminMode ? (
+            {!isAdminMode ? (
               <>
-                <label htmlFor="password">Password</label>
+                <label htmlFor="username">Username</label>
                 <input
-                  id="password"
-                  onChange={(event) => setPasswordInput(event.target.value)}
-                  placeholder="Stored in secrets/admin.env"
-                  type="password"
-                  value={passwordInput}
+                  id="username"
+                  onChange={(event) => setUsernameInput(event.target.value)}
+                  placeholder="Choose a display name"
+                  type="text"
+                  value={usernameInput}
                 />
+                <label htmlFor="invite">Invite code</label>
+                <input
+                  id="invite"
+                  onChange={(event) => setInviteCodeInput(event.target.value)}
+                  placeholder="Request an invite first"
+                  type="text"
+                  value={inviteCodeInput}
+                />
+                <button
+                  className="secondary-button"
+                  disabled={status === "loading"}
+                  onClick={requestInvite}
+                  type="button"
+                >
+                  Request invite
+                </button>
               </>
             ) : null}
+            <label htmlFor="verification-code">Email code</label>
+            <input
+              id="verification-code"
+              onChange={(event) => setVerificationCodeInput(event.target.value)}
+              placeholder="6 digit code"
+              type="text"
+              value={verificationCodeInput}
+            />
+            <button
+              className="secondary-button"
+              disabled={status === "loading"}
+              onClick={requestVerificationCode}
+              type="button"
+            >
+              Send email code
+            </button>
             <button className="run-button" type="submit">
               {status === "loading" ? "Signing in" : "Continue"}
             </button>
+            {authNotice ? <p className="notice-line">{authNotice}</p> : null}
             <p>
               {isAdminMode
-                ? "Admin credentials are local demo secrets; no real identity provider is used."
-                : "Demo auth is email-only local state; no real identity provider or payment account is used."}
+                ? "Admin login uses a mock email verification code; no real email provider is used."
+                : "Invite and email code delivery are mocked for local testing; no real identity provider is used."}
             </p>
           </form>
         </section>
@@ -547,6 +696,42 @@ export function DemoFlow({
                 <li className={check.passed ? "pass" : "fail"} key={check.code}>
                   <span>{check.code}</span>
                   <p>{check.message}</p>
+                </li>
+              ))}
+            </ol>
+          </article>
+        ) : null}
+
+        {isAdminMode ? (
+          <article className="panel wide">
+            <div className="panel-heading">
+              <span>Users</span>
+              <strong>{adminUsers.length}</strong>
+            </div>
+            <div className="table-list">
+              {adminUsers.map((user) => (
+                <div className="table-row" key={user.email}>
+                  <code>{user.email}</code>
+                  <span>{user.username}</span>
+                  <span>{user.role}</span>
+                  <span>{user.status}</span>
+                </div>
+              ))}
+            </div>
+          </article>
+        ) : null}
+
+        {isAdminMode ? (
+          <article className="panel wide">
+            <div className="panel-heading">
+              <span>System logs</span>
+              <strong>{adminLogs.length}</strong>
+            </div>
+            <ol className="event-list">
+              {adminLogs.slice(0, 12).map((log) => (
+                <li key={log.logId}>
+                  <span>{`${log.level} ${log.source}`}</span>
+                  <code>{log.traceId}</code>
                 </li>
               ))}
             </ol>

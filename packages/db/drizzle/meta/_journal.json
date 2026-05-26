@@ -8,6 +8,13 @@
       "when": 1779810258248,
       "tag": "0000_fat_harry_osborn",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1779897600000,
+      "tag": "0001_admin_logs_email_auth",
+      "breakpoints": true
     }
   ]
 }

@@ -3,19 +3,34 @@ import { cors } from "hono/cors";
 import { getJapanTripScenarioVariant } from "@smartpay/mock-data";
 import { buildDemoDecisionFlow } from "@smartpay/rules";
 import {
+  demoAdminLogsResponseSchema,
+  demoAdminUsersResponseSchema,
   demoAuthSessionRequestSchema,
   demoAuthSessionResponseSchema,
   demoDecisionFlowRequestSchema,
   demoInteractiveDecisionRequestSchema,
   demoInteractiveDecisionResponseSchema,
+  demoEmailCodeRequestSchema,
+  demoEmailCodeResponseSchema,
+  demoInviteRequestSchema,
+  demoInviteResponseSchema,
   errorResponseSchema,
   type AppMode,
   type ErrorResponse
 } from "@smartpay/contracts";
 import { analyzeInteractionWithOptionalDeepSeek } from "./llm";
 import { getJapanTripMockMcpContext } from "./mock-mcp";
-import { ADMIN_TOKEN_HEADER, getDemoAdminToken, isAdminCredentials, isAdminRequest } from "./auth";
+import { ADMIN_TOKEN_HEADER, createAdminSessionToken, isAdminRequest } from "./auth";
 import { getSecret } from "./secrets";
+import { sendInviteEmail, sendVerificationEmail } from "./email-delivery";
+import {
+  addSystemLog,
+  getSystemLogs,
+  getUsers,
+  issueEmailCode,
+  requestInvite,
+  verifyEmailSession
+} from "./runtime-state";
 
 const app = new Hono();
 
@@ -49,6 +64,35 @@ function buildError(traceId: string, code: string, message: string, details?: st
   });
 }
 
+async function requireAdmin(context: Context, traceId: string): Promise<Response | undefined> {
+  if (isAdminRequest(context)) {
+    return undefined;
+  }
+
+  await addSystemLog({
+    traceId,
+    level: "warn",
+    source: "admin.auth",
+    message: "Admin token missing or invalid.",
+    payload: { path: context.req.path },
+    redacted: getAppMode() === "release"
+  });
+  return context.json(buildError(traceId, "admin_required", "Admin token is required."), 403);
+}
+
+app.onError(async (error, context) => {
+  const traceId = getTraceId(context);
+  await addSystemLog({
+    traceId,
+    level: "error",
+    source: "api.runtime",
+    message: error.message,
+    payload: getAppMode() === "release" ? {} : { stack: error.stack },
+    redacted: getAppMode() === "release"
+  });
+  return context.json(buildError(traceId, "runtime_error", "Unexpected runtime error."), 500);
+});
+
 app.get("/api/health", (context) =>
   context.json({
     ok: true,
@@ -59,6 +103,139 @@ app.get("/api/health", (context) =>
     traceId: getTraceId(context)
   })
 );
+
+app.post("/api/demo/invites/request", async (context) => {
+  const traceId = getTraceId(context);
+  context.header("X-Trace-Id", traceId);
+  const body = await context.req.json().catch(() => ({}));
+  const parsed = demoInviteRequestSchema.safeParse(body);
+
+  if (!parsed.success) {
+    return context.json(
+      buildError(
+        traceId,
+        "invalid_request",
+        "Request body does not match the invite request contract.",
+        parsed.error.issues.map((issue) => issue.message)
+      ),
+      400
+    );
+  }
+
+  const user = await requestInvite(parsed.data.email);
+  const delivery = await sendInviteEmail({
+    email: user.email,
+    inviteCode: user.inviteCode ?? ""
+  });
+  if (!delivery.sent) {
+    await addSystemLog({
+      traceId,
+      level: "error",
+      source: "auth.invite",
+      message: "Invite email delivery is not configured.",
+      userEmail: user.email,
+      payload: {},
+      redacted: getAppMode() === "release"
+    });
+    return context.json(
+      buildError(traceId, delivery.reason, "Email delivery is not configured for invite emails."),
+      503
+    );
+  }
+  await addSystemLog({
+    traceId,
+    level: "info",
+    source: "auth.invite",
+    message: "Invite requested.",
+    userEmail: user.email,
+    payload: { status: user.status },
+    redacted: getAppMode() === "release"
+  });
+
+  return context.json(
+    demoInviteResponseSchema.parse({
+      traceId,
+      user,
+      deliveryStatus: "sent"
+    })
+  );
+});
+
+app.post("/api/demo/auth/email-code/request", async (context) => {
+  const traceId = getTraceId(context);
+  context.header("X-Trace-Id", traceId);
+  const body = await context.req.json().catch(() => ({}));
+  const parsed = demoEmailCodeRequestSchema.safeParse(body);
+
+  if (!parsed.success) {
+    return context.json(
+      buildError(
+        traceId,
+        "invalid_request",
+        "Request body does not match the email-code request contract.",
+        parsed.error.issues.map((issue) => issue.message)
+      ),
+      400
+    );
+  }
+
+  const issued = await issueEmailCode(parsed.data.email, parsed.data.inviteCode);
+  if (!issued) {
+    await addSystemLog({
+      traceId,
+      level: "warn",
+      source: "auth.email_code",
+      message: "Email code request rejected.",
+      userEmail: parsed.data.email,
+      payload: { inviteCodeProvided: Boolean(parsed.data.inviteCode) },
+      redacted: getAppMode() === "release"
+    });
+    return context.json(
+      buildError(traceId, "invite_required", "A valid invite code is required before login."),
+      403
+    );
+  }
+
+  const delivery = await sendVerificationEmail({
+    email: parsed.data.email.trim().toLowerCase(),
+    verificationCode: issued.code,
+    expiresAt: issued.expiresAt
+  });
+  if (!delivery.sent) {
+    await addSystemLog({
+      traceId,
+      level: "error",
+      source: "auth.email_code",
+      message: "Verification email delivery is not configured.",
+      userEmail: parsed.data.email,
+      payload: {},
+      redacted: getAppMode() === "release"
+    });
+    return context.json(
+      buildError(traceId, delivery.reason, "Email delivery is not configured for verification codes."),
+      503
+    );
+  }
+
+  await addSystemLog({
+    traceId,
+    level: "info",
+    source: "auth.email_code",
+    message: "Email verification code issued.",
+    userEmail: parsed.data.email,
+    payload: { expiresAt: issued.expiresAt },
+    redacted: getAppMode() === "release"
+  });
+
+  return context.json(
+    demoEmailCodeResponseSchema.parse({
+      traceId,
+      email: parsed.data.email.trim().toLowerCase(),
+      expiresAt: issued.expiresAt,
+      deliveryStatus: "sent"
+    })
+  );
+});
 
 app.post("/api/demo/auth/session", async (context) => {
   const traceId = getTraceId(context);
@@ -79,43 +256,74 @@ app.post("/api/demo/auth/session", async (context) => {
   }
 
   const email = parsed.data.email.trim().toLowerCase();
-  if (isAdminCredentials(email, parsed.data.password)) {
-    const adminToken = getDemoAdminToken();
-    if (!adminToken) {
-      return context.json(
-        buildError(traceId, "admin_not_configured", "Demo admin credentials are not configured."),
-        503
-      );
-    }
-
+  const user = await verifyEmailSession(email, parsed.data.verificationCode, parsed.data.username);
+  if (!user) {
+    await addSystemLog({
+      traceId,
+      level: "warn",
+      source: "auth.session",
+      message: "Email verification failed.",
+      userEmail: email,
+      payload: {},
+      redacted: getAppMode() === "release"
+    });
     return context.json(
-      demoAuthSessionResponseSchema.parse({
-        traceId,
-        session: {
-          email,
-          role: "admin",
-          adminToken
-        }
-      })
-    );
-  }
-
-  if (parsed.data.password) {
-    return context.json(
-      buildError(traceId, "invalid_credentials", "Admin email or password is incorrect."),
+      buildError(traceId, "invalid_verification_code", "Email verification code is invalid or expired."),
       401
     );
   }
+
+  await addSystemLog({
+    traceId,
+    level: "info",
+    source: "auth.session",
+    message: "User logged in.",
+    userEmail: user.email,
+    payload: { role: user.role },
+    redacted: getAppMode() === "release"
+  });
 
   return context.json(
     demoAuthSessionResponseSchema.parse({
       traceId,
       session: {
         email,
-        role: "user"
+        username: user.username,
+        role: user.role,
+        ...(user.role === "admin" ? { adminToken: createAdminSessionToken(user.email) } : {})
       }
     })
   );
+});
+
+app.get("/api/demo/admin/users", async (context) => {
+  const traceId = getTraceId(context);
+  context.header("X-Trace-Id", traceId);
+  const adminError = await requireAdmin(context, traceId);
+  if (adminError) {
+    return adminError;
+  }
+
+  await addSystemLog({
+    traceId,
+    level: "info",
+    source: "admin.users",
+    message: "Admin listed users.",
+    payload: {},
+    redacted: getAppMode() === "release"
+  });
+  return context.json(demoAdminUsersResponseSchema.parse({ traceId, users: await getUsers() }));
+});
+
+app.get("/api/demo/admin/logs", async (context) => {
+  const traceId = getTraceId(context);
+  context.header("X-Trace-Id", traceId);
+  const adminError = await requireAdmin(context, traceId);
+  if (adminError) {
+    return adminError;
+  }
+
+  return context.json(demoAdminLogsResponseSchema.parse({ traceId, logs: await getSystemLogs() }));
 });
 
 app.post("/api/demo/japan-trip/decision-flow", async (context) => {
@@ -123,6 +331,14 @@ app.post("/api/demo/japan-trip/decision-flow", async (context) => {
   context.header("X-Trace-Id", traceId);
 
   if (process.env.REAL_PAYMENTS_ENABLED === "true") {
+    await addSystemLog({
+      traceId,
+      level: "error",
+      source: "payment.guard",
+      message: "Real payment mode refused.",
+      payload: {},
+      redacted: getAppMode() === "release"
+    });
     return context.json(
       buildError(
         traceId,
@@ -161,6 +377,15 @@ app.post("/api/demo/japan-trip/decision-flow", async (context) => {
     response.debug = undefined;
   }
 
+  await addSystemLog({
+    traceId,
+    level: "info",
+    source: "decision.flow",
+    message: "Decision flow completed.",
+    userEmail: null,
+    payload: { decision: response.decision.decision, variant: parsed.data.variant },
+    redacted: mode === "release"
+  });
   return context.json(response);
 });
 
@@ -214,6 +439,20 @@ app.post("/api/demo/japan-trip/interactive-decision", async (context) => {
   if (!isAdmin) {
     flow.debug = undefined;
   }
+
+  await addSystemLog({
+    traceId,
+    level: "info",
+    source: "decision.interactive",
+    message: "Interactive decision completed.",
+    userEmail: parsed.data.email,
+    payload: {
+      decision: flow.decision.decision,
+      fitCheck: flow.fitCheck.fitCheck,
+      llmProvider: interaction.llm.provider
+    },
+    redacted: mode === "release"
+  });
 
   return context.json(
     demoInteractiveDecisionResponseSchema.parse({

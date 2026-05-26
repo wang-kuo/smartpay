@@ -284,17 +284,72 @@ export const demoInteractiveDecisionRequestSchema = z.object({
 
 export const demoAuthSessionRequestSchema = z.object({
   email: z.string().email(),
-  password: z.string().optional()
+  verificationCode: z.string().min(6).max(12),
+  username: z.string().min(1).max(80).optional()
 });
 
 export const demoAuthRoleSchema = z.enum(["user", "admin"]);
+export const demoUserStatusSchema = z.enum(["invited", "active"]);
+
+export const demoUserRecordSchema = z.object({
+  email: z.string().email(),
+  username: z.string().min(1),
+  role: demoAuthRoleSchema,
+  status: demoUserStatusSchema,
+  inviteCode: z.string().optional(),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+  lastLoginAt: z.string().datetime().nullable()
+});
 
 export const demoAuthSessionResponseSchema = traceEnvelopeSchema.extend({
   session: z.object({
     email: z.string().email(),
+    username: z.string().min(1),
     role: demoAuthRoleSchema,
     adminToken: z.string().optional()
   })
+});
+
+export const demoInviteRequestSchema = z.object({
+  email: z.string().email()
+});
+
+export const demoInviteResponseSchema = traceEnvelopeSchema.extend({
+  user: demoUserRecordSchema,
+  deliveryStatus: z.enum(["sent"])
+});
+
+export const demoEmailCodeRequestSchema = z.object({
+  email: z.string().email(),
+  inviteCode: z.string().min(4).max(32).optional()
+});
+
+export const demoEmailCodeResponseSchema = traceEnvelopeSchema.extend({
+  email: z.string().email(),
+  expiresAt: z.string().datetime(),
+  deliveryStatus: z.enum(["sent"])
+});
+
+export const demoAdminUsersResponseSchema = traceEnvelopeSchema.extend({
+  users: z.array(demoUserRecordSchema)
+});
+
+export const demoSystemLogLevelSchema = z.enum(["info", "warn", "error"]);
+export const demoSystemLogRecordSchema = z.object({
+  logId: z.string().min(1),
+  traceId: z.string().min(1),
+  level: demoSystemLogLevelSchema,
+  source: z.string().min(1),
+  message: z.string().min(1),
+  userEmail: z.string().email().nullable(),
+  payload: z.record(z.string(), z.unknown()),
+  redacted: z.boolean(),
+  createdAt: z.string().datetime()
+});
+
+export const demoAdminLogsResponseSchema = traceEnvelopeSchema.extend({
+  logs: z.array(demoSystemLogRecordSchema)
 });
 
 export const demoInteractiveDecisionResponseSchema = demoDecisionFlowResponseSchema.extend({
@@ -335,6 +390,14 @@ export type DemoDecisionFlowResponse = z.infer<typeof demoDecisionFlowResponseSc
 export type DemoAuthRole = z.infer<typeof demoAuthRoleSchema>;
 export type DemoAuthSessionRequest = z.infer<typeof demoAuthSessionRequestSchema>;
 export type DemoAuthSessionResponse = z.infer<typeof demoAuthSessionResponseSchema>;
+export type DemoUserRecord = z.infer<typeof demoUserRecordSchema>;
+export type DemoInviteRequest = z.infer<typeof demoInviteRequestSchema>;
+export type DemoInviteResponse = z.infer<typeof demoInviteResponseSchema>;
+export type DemoEmailCodeRequest = z.infer<typeof demoEmailCodeRequestSchema>;
+export type DemoEmailCodeResponse = z.infer<typeof demoEmailCodeResponseSchema>;
+export type DemoAdminUsersResponse = z.infer<typeof demoAdminUsersResponseSchema>;
+export type DemoSystemLogRecord = z.infer<typeof demoSystemLogRecordSchema>;
+export type DemoAdminLogsResponse = z.infer<typeof demoAdminLogsResponseSchema>;
 export type DemoInteractiveDecisionRequest = z.infer<typeof demoInteractiveDecisionRequestSchema>;
 export type DemoInteractiveDecisionResponse = z.infer<typeof demoInteractiveDecisionResponseSchema>;
 export type DemoDecisionFlowErrorResponse = z.infer<typeof errorResponseSchema>;

@@ -23,8 +23,15 @@ export const categoryEnum = pgEnum("consumption_category", [
 ]);
 
 export const users = pgTable("users", {
-  id: text("id").primaryKey(),
-  profile: jsonb("profile").notNull(),
+  email: text("email").primaryKey(),
+  username: text("username").notNull(),
+  role: text("role").default("user").notNull(),
+  status: text("status").default("invited").notNull(),
+  inviteCode: text("invite_code"),
+  verificationCode: text("verification_code"),
+  verificationExpiresAt: timestamp("verification_expires_at", { withTimezone: true }),
+  profile: jsonb("profile").default({}).notNull(),
+  lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull()
 });
@@ -138,5 +145,27 @@ export const eventLog = pgTable(
     index("event_log_request_id_idx").on(table.requestId),
     index("event_log_authorization_id_idx").on(table.authorizationId),
     index("event_log_created_at_idx").on(table.createdAt)
+  ]
+);
+
+export const systemLog = pgTable(
+  "system_log",
+  {
+    id: text("id").primaryKey(),
+    traceId: text("trace_id").notNull(),
+    level: text("level").notNull(),
+    source: text("source").notNull(),
+    message: text("message").notNull(),
+    userEmail: text("user_email"),
+    payload: jsonb("payload").notNull(),
+    redacted: boolean("redacted").default(false).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()
+  },
+  (table) => [
+    index("system_log_trace_id_idx").on(table.traceId),
+    index("system_log_level_idx").on(table.level),
+    index("system_log_source_idx").on(table.source),
+    index("system_log_user_email_idx").on(table.userEmail),
+    index("system_log_created_at_idx").on(table.createdAt)
   ]
 );

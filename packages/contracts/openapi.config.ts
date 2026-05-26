@@ -1,9 +1,15 @@
 import { OpenAPIRegistry, OpenApiGeneratorV3 } from "@asteasolutions/zod-to-openapi";
 import {
+  demoAdminLogsResponseSchema,
+  demoAdminUsersResponseSchema,
   demoAuthSessionRequestSchema,
   demoAuthSessionResponseSchema,
   demoDecisionFlowRequestSchema,
   demoDecisionFlowResponseSchema,
+  demoEmailCodeRequestSchema,
+  demoEmailCodeResponseSchema,
+  demoInviteRequestSchema,
+  demoInviteResponseSchema,
   demoInteractiveDecisionRequestSchema,
   demoInteractiveDecisionResponseSchema,
   errorResponseSchema
@@ -13,8 +19,74 @@ const registry = new OpenAPIRegistry();
 
 registry.registerPath({
   method: "post",
+  path: "/api/demo/invites/request",
+  summary: "Request a mock demo invite code.",
+  request: {
+    body: {
+      content: {
+        "application/json": {
+          schema: demoInviteRequestSchema
+        }
+      }
+    }
+  },
+  responses: {
+    200: {
+      description: "Invite request accepted.",
+      content: {
+        "application/json": {
+          schema: demoInviteResponseSchema
+        }
+      }
+    },
+    400: {
+      description: "Invalid request.",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema
+        }
+      }
+    }
+  }
+});
+
+registry.registerPath({
+  method: "post",
+  path: "/api/demo/auth/email-code/request",
+  summary: "Request a mock email verification code.",
+  request: {
+    body: {
+      content: {
+        "application/json": {
+          schema: demoEmailCodeRequestSchema
+        }
+      }
+    }
+  },
+  responses: {
+    200: {
+      description: "Verification code issued.",
+      content: {
+        "application/json": {
+          schema: demoEmailCodeResponseSchema
+        }
+      }
+    },
+    400: {
+      description: "Invalid request.",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema
+        }
+      }
+    }
+  }
+});
+
+registry.registerPath({
+  method: "post",
   path: "/api/demo/auth/session",
-  summary: "Create a local demo user or admin session.",
+  summary: "Create a local demo session with an email verification code.",
   request: {
     body: {
       content: {
@@ -42,7 +114,55 @@ registry.registerPath({
       }
     },
     401: {
-      description: "Invalid admin credentials.",
+      description: "Invalid verification code.",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema
+        }
+      }
+    }
+  }
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/api/demo/admin/users",
+  summary: "List demo users for admin debugging.",
+  responses: {
+    200: {
+      description: "Demo users.",
+      content: {
+        "application/json": {
+          schema: demoAdminUsersResponseSchema
+        }
+      }
+    },
+    403: {
+      description: "Admin token required.",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema
+        }
+      }
+    }
+  }
+});
+
+registry.registerPath({
+  method: "get",
+  path: "/api/demo/admin/logs",
+  summary: "List runtime logs for admin debugging.",
+  responses: {
+    200: {
+      description: "Runtime logs.",
+      content: {
+        "application/json": {
+          schema: demoAdminLogsResponseSchema
+        }
+      }
+    },
+    403: {
+      description: "Admin token required.",
       content: {
         "application/json": {
           schema: errorResponseSchema
