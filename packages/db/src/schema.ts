@@ -8,7 +8,7 @@ import {
   pgTable,
   text,
   timestamp,
-  uuid
+  uniqueIndex
 } from "drizzle-orm/pg-core";
 
 export const decisionEnum = pgEnum("decision", ["allow", "ask", "deny"]);
@@ -59,7 +59,7 @@ export const consumptionRequests = pgTable(
     id: text("id").primaryKey(),
     userId: text("user_id").notNull(),
     authorizationId: text("authorization_id"),
-    traceId: uuid("trace_id").notNull(),
+    traceId: text("trace_id").notNull(),
     category: categoryEnum("category").notNull(),
     purpose: text("purpose").notNull(),
     amount: numeric("amount").notNull(),
@@ -80,7 +80,7 @@ export const decisions = pgTable(
     id: text("id").primaryKey(),
     requestId: text("request_id").notNull(),
     userId: text("user_id").notNull(),
-    traceId: uuid("trace_id").notNull(),
+    traceId: text("trace_id").notNull(),
     decision: decisionEnum("decision").notNull(),
     fitCheck: fitCheckEnum("fit_check").notNull(),
     requiresUserApproval: boolean("requires_user_approval").notNull(),
@@ -102,7 +102,7 @@ export const executions = pgTable(
     id: text("id").primaryKey(),
     requestId: text("request_id").notNull(),
     userId: text("user_id").notNull(),
-    traceId: uuid("trace_id").notNull(),
+    traceId: text("trace_id").notNull(),
     idempotencyKey: text("idempotency_key").notNull(),
     orderStatus: text("order_status").notNull(),
     paymentStatus: text("payment_status").notNull(),
@@ -113,7 +113,7 @@ export const executions = pgTable(
     index("executions_request_id_idx").on(table.requestId),
     index("executions_user_id_idx").on(table.userId),
     index("executions_trace_id_idx").on(table.traceId),
-    index("executions_idempotency_key_idx").on(table.idempotencyKey),
+    uniqueIndex("executions_idempotency_key_idx").on(table.idempotencyKey),
     index("executions_created_at_idx").on(table.createdAt)
   ]
 );
@@ -122,11 +122,12 @@ export const eventLog = pgTable(
   "event_log",
   {
     id: text("id").primaryKey(),
-    traceId: uuid("trace_id").notNull(),
+    traceId: text("trace_id").notNull(),
     userId: text("user_id").notNull(),
     requestId: text("request_id"),
     authorizationId: text("authorization_id"),
     type: text("type").notNull(),
+    message: text("message").notNull(),
     payload: jsonb("payload").notNull(),
     redacted: boolean("redacted").default(false).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull()

@@ -88,5 +88,21 @@
       "user_accepts_mid_range_hotel_for_japan_trip",
       "travel_auto_execution_confidence_increased"
     ]
+  },
+  "variants": {
+    "askFitCheck": {
+      "fitCheck": "caution",
+      "softRisks": ["Hotel price is near the high end of the expected Japan trip range."],
+      "explanation": "The request is plausible, but the user should confirm before execution."
+    },
+    "denyRequest": {
+      "requestId": "req_japan_hotel_over_budget",
+      "userId": "user_001",
+      "agentId": "travel_agent",
+      "category": "Travel",
+      "purpose": "Book premium hotel for Japan trip",
+      "amount": 3000,
+      "currency": "SGD"
+    }
   }
 }
