@@ -19,10 +19,12 @@ import { getSecret } from "./secrets";
 
 const app = new Hono();
 
+const localWebOrigins = ["http://localhost:3000", "http://127.0.0.1:3000", "http://192.168.1.9:3000"];
+
 app.use(
   "*",
   cors({
-    origin: ["http://localhost:3000"],
+    origin: localWebOrigins,
     allowHeaders: ["Content-Type", "Idempotency-Key", "X-Trace-Id", ADMIN_TOKEN_HEADER],
     allowMethods: ["GET", "POST", "OPTIONS"]
   })

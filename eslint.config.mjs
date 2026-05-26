@@ -16,6 +16,8 @@ export default tseslint.config(
       "**/.expo/**",
       ".cache/**",
       "**/.cache/**",
+      ".corepack/**",
+      "**/.corepack/**",
       "coverage/**",
       "**/coverage/**",
       "playwright-report/**",
