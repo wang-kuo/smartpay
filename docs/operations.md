@@ -20,14 +20,55 @@ Run the web and API demo:
 pnpm dev
 ```
 
+Open the user demo at `http://localhost:3000`. The demo login is email-only local browser state.
+Open the local admin console at `http://localhost:3000/admin`.
+
 ## Required External Services
 
 - GitHub repository and GitHub Actions.
-- OpenAI API key for real profile analysis and AI fit check when mocks are replaced.
+- DeepSeek API key for real profile analysis and AI fit check when mocks are replaced.
 - Neon Postgres for preview or hosted demo.
 - Upstash Redis for rate limits, queues, and locks.
 - Vercel for API and web preview deployment.
 - Secrets manager through GitHub and Vercel environment variables.
+
+## DeepSeek Key
+
+The interactive demo can call DeepSeek from the API server only through LangChain. The browser never
+receives the key.
+
+For local development, keep secrets outside git, for example:
+
+```bash
+mkdir -p secrets
+printf 'DEEPSEEK_API_KEY=your_key_here\nDEEPSEEK_MODEL=deepseek-v4-flash\nDEEPSEEK_BASE_URL=https://api.deepseek.com\n' > secrets/deepseek.env
+set -a
+. secrets/deepseek.env
+set +a
+pnpm dev
+```
+
+If `DEEPSEEK_API_KEY` is empty, times out, or returns malformed output, the API uses deterministic
+fallback analysis and the decision engine still fails closed to `ask` or `deny` where appropriate.
+Do not commit files under `secrets/`.
+
+DeepSeek is used through its OpenAI-compatible chat-completions API with JSON output. LangChain uses
+`@langchain/openai` with `DEEPSEEK_BASE_URL` set to `https://api.deepseek.com`.
+
+## Demo Admin Account
+
+The local admin account is configured through ignored secrets:
+
+```bash
+mkdir -p secrets
+printf 'DEMO_ADMIN_EMAIL=admin@smartpay.local\nDEMO_ADMIN_PASSWORD=change_me\nDEMO_ADMIN_TOKEN=change_me_token\n' > secrets/admin.env
+pnpm dev
+```
+
+Only admin sessions receive `session.adminToken`. The web admin page sends it as
+`X-Demo-Admin-Token`; the API returns debug payloads, structured analysis, LLM status, and trace
+details only when that token matches. This is demo-only local auth, not a production identity
+provider.
 
 ## Environment Modes
 

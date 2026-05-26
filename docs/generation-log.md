@@ -77,3 +77,36 @@ Final validation on `main`:
 
 Final branch state before this log commit: `main` was ahead of `origin/main` by 9 commits, with only
 the pre-existing untracked `doc/` directory outside the generated work.
+
+## Interactive LLM And Admin Console Update
+
+Date: 2026-05-26 Asia/Singapore
+
+Added the user interaction and admin boundary requested after the initial vertical slice:
+
+- Added local demo auth through `POST /api/demo/auth/session`.
+- Created an ignored local admin secret file under `secrets/admin.env`.
+- Kept DeepSeek credentials in ignored local secrets and routed LLM analysis through LangChain.
+- Added mock MCP-style context for merchant quote, market intelligence, wallet preview, and
+  consumption history.
+- Added `/admin` as the only UI surface for structured analysis, LLM status, event trace, fixture
+  controls, and debug rules.
+- Kept the public user page focused on login, chat, final decision, quote, authorization, and mock
+  execution.
+- Restricted API debug payloads, structured analysis, and LLM status to requests with a matching
+  `X-Demo-Admin-Token`.
+
+Validation log for this update:
+
+| Command | Result |
+| --- | --- |
+| `corepack pnpm lint` | Passed |
+| `corepack pnpm typecheck` | Passed |
+| `corepack pnpm test` | Passed, 3 test files, 29 tests |
+| `corepack pnpm build` | Passed for contracts, db, domain, mock-data, web, WeChat, rules, and API |
+| `corepack pnpm test:e2e` | Final run passed, 4 tests across Chromium and mobile Chrome |
+
+During e2e validation, an old reused dev server first showed stale UI output, then the real DeepSeek
+path exposed a LangChain prompt-template issue with literal JSON braces. The stale servers were
+stopped, the prompt was changed to pass example JSON as a template variable, and Playwright was
+configured to use deterministic fallback by setting `DEEPSEEK_API_KEY=""` for e2e runs.

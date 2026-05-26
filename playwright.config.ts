@@ -25,6 +25,10 @@ export default defineConfig({
   ],
   webServer: {
     command: "corepack pnpm dev",
+    env: {
+      ...process.env,
+      DEEPSEEK_API_KEY: ""
+    },
     url: "http://localhost:3000",
     reuseExistingServer: !process.env.CI,
     timeout: 120_000

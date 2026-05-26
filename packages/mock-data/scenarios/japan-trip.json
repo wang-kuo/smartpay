@@ -24,6 +24,38 @@
     },
     "goalImpact": "Japan trip is affordable if total cost stays below S$2500."
   },
+  "consumptionHistory": [
+    {
+      "historyId": "hist_travel_001",
+      "category": "Travel",
+      "merchantName": "Osaka Rail Pass",
+      "amount": 210,
+      "currency": "SGD",
+      "decision": "allow",
+      "createdAt": "2026-03-12T09:00:00.000Z",
+      "signals": ["accepts_public_transport", "values_convenience_when_budget_safe"]
+    },
+    {
+      "historyId": "hist_travel_002",
+      "category": "Travel",
+      "merchantName": "Kyoto Boutique Ryokan",
+      "amount": 1450,
+      "currency": "SGD",
+      "decision": "ask",
+      "createdAt": "2026-04-02T12:00:00.000Z",
+      "signals": ["asks_confirmation_above_auto_limit", "prefers_mid_range_stays"]
+    },
+    {
+      "historyId": "hist_lifestyle_001",
+      "category": "Lifestyle",
+      "merchantName": "Premium Dining Club",
+      "amount": 680,
+      "currency": "SGD",
+      "decision": "deny",
+      "createdAt": "2026-04-20T18:30:00.000Z",
+      "signals": ["blocks_non_goal_spend_when_travel_budget_active"]
+    }
+  ],
   "authorization": {
     "authorizationId": "auth_japan_trip_001",
     "type": "temporary",

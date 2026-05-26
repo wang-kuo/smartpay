@@ -1,5 +1,34 @@
 # SmartPay API
 
+## Demo Auth Endpoint
+
+`POST /api/demo/auth/session`
+
+Request:
+
+```json
+{
+  "email": "demo@example.com",
+  "password": "only-required-for-admin"
+}
+```
+
+Response:
+
+```json
+{
+  "traceId": "trace_id",
+  "session": {
+    "email": "demo@example.com",
+    "role": "user"
+  }
+}
+```
+
+Admin login uses `DEMO_ADMIN_EMAIL`, `DEMO_ADMIN_PASSWORD`, and `DEMO_ADMIN_TOKEN` from local
+secrets or environment variables. Admin responses include `session.adminToken`; clients send that
+token as `X-Demo-Admin-Token` to unlock admin-only debug and analysis fields.
+
 ## Main Demo Endpoint
 
 `POST /api/demo/japan-trip/decision-flow`
@@ -31,12 +60,40 @@ Response includes:
 - `execution`
 - `feedbackPrompt`
 - `events`
-- `debug` in `APP_MODE=debug`
+- `debug` only in `APP_MODE=debug` and only when `X-Demo-Admin-Token` matches the local admin token
 
 The final decision is always `allow`, `ask`, or `deny`.
 In `APP_MODE=release`, debug data is omitted and event payloads are redacted.
 If `REAL_PAYMENTS_ENABLED=true`, the demo endpoint refuses execution with
 `real_payments_disabled` because the Japan Trip flow is mock-only.
+
+## Interactive Demo Endpoint
+
+`POST /api/demo/japan-trip/interactive-decision`
+
+Request:
+
+```json
+{
+  "email": "demo@example.com",
+  "message": "I want to book a 6 day Japan trip under S$2500.",
+  "scenario": "japan_trip",
+  "conversationHistory": []
+}
+```
+
+Response includes every field from the main decision-flow response plus:
+
+- `interaction.email`
+- `interaction.message`
+- `interaction.summary`
+- `interaction.analysis` only when `X-Demo-Admin-Token` matches the local admin token
+- `interaction.llm` only when `X-Demo-Admin-Token` matches the local admin token
+
+The server may use `DEEPSEEK_API_KEY` through LangChain for structured fit-check analysis. If the key
+is absent, the DeepSeek call times out, or the output fails schema validation, the endpoint uses a
+deterministic fallback and still returns a contract-shaped response. The LLM output is only fit-check
+context; the rule engine still owns the final `allow`, `ask`, or `deny`.
 
 ## Reserved Module APIs
 

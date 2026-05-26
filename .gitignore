@@ -8,6 +8,7 @@ node_modules/
 !.env.example
 !.env.debug.example
 !.env.release.example
+secrets/
 
 # Build output
 .next/

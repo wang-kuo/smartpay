@@ -373,6 +373,7 @@ export function buildDemoDecisionFlow(
     traceId,
     profile: scenario.profile,
     goalContext: scenario.goalContext,
+    consumptionHistory: scenario.consumptionHistory,
     authorization: scenario.authorization,
     request: scenario.consumptionRequest,
     quotes: scenario.quotes,

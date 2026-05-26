@@ -11,10 +11,12 @@
     "test": "vitest run src/**/*.test.ts"
   },
   "dependencies": {
+    "@hono/node-server": "^2.0.4",
+    "@langchain/core": "^1.1.48",
+    "@langchain/openai": "^1.4.7",
     "@smartpay/contracts": "workspace:*",
     "@smartpay/mock-data": "workspace:*",
     "@smartpay/rules": "workspace:*",
-    "@hono/node-server": "^2.0.4",
     "@vercel/node": "^5.8.4",
     "hono": "^4.12.23"
   },

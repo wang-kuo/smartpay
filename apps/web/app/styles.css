@@ -46,6 +46,61 @@ button:disabled {
   padding: 32px;
 }
 
+.login-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 420px);
+  gap: 32px;
+  align-items: center;
+  min-height: calc(100vh - 64px);
+  margin: 0 auto;
+  max-width: 1120px;
+}
+
+.login-copy p {
+  max-width: 720px;
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1.55;
+}
+
+.login-form {
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  padding: 22px;
+}
+
+.login-form label {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.login-form input,
+.chat-form textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--ink);
+  font: inherit;
+}
+
+.login-form input {
+  min-height: 44px;
+  padding: 0 12px;
+}
+
+.login-form p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 .topbar {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(280px, 420px);
@@ -162,6 +217,85 @@ dt {
   color: #ffffff;
 }
 
+.text-button {
+  justify-self: start;
+  min-height: 34px;
+  border: 0;
+  background: transparent;
+  color: var(--teal);
+  font-weight: 800;
+  padding: 0;
+}
+
+.chat-workbench {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(280px, 0.55fr);
+  gap: 16px;
+  margin: 24px auto 16px;
+  max-width: 1440px;
+}
+
+.chat-workbench.user-only {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.chat-panel,
+.analysis-panel {
+  display: grid;
+  align-content: start;
+  gap: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  padding: 18px;
+}
+
+.message-list {
+  display: grid;
+  max-height: 340px;
+  gap: 12px;
+  overflow: auto;
+}
+
+.message {
+  display: grid;
+  max-width: 82%;
+  gap: 4px;
+  border-radius: 8px;
+  background: #eef2f7;
+  padding: 10px 12px;
+}
+
+.message.user {
+  justify-self: end;
+  background: var(--teal-soft);
+}
+
+.message span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.message p,
+.analysis-panel p {
+  margin: 0;
+  color: #334155;
+  line-height: 1.5;
+}
+
+.chat-form {
+  display: grid;
+  gap: 10px;
+}
+
+.chat-form textarea {
+  min-height: 96px;
+  resize: vertical;
+  padding: 12px;
+}
+
 .error-banner {
   margin: 0 auto 16px;
   max-width: 1440px;
@@ -177,6 +311,10 @@ dt {
   margin: 0 auto 16px;
   max-width: 1440px;
   padding: 18px;
+}
+
+.control-band.compact {
+  margin-top: 0;
 }
 
 .decision-band > div {
@@ -320,6 +458,8 @@ dd {
 
 @media (max-width: 1100px) {
   .topbar,
+  .login-layout,
+  .chat-workbench,
   .decision-band,
   .workspace {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -337,6 +477,8 @@ dd {
   }
 
   .topbar,
+  .login-layout,
+  .chat-workbench,
   .control-band,
   .decision-band,
   .workspace {
@@ -354,6 +496,10 @@ dd {
   .variant-button,
   .run-button {
     flex: 1 1 140px;
+  }
+
+  .message {
+    max-width: 100%;
   }
 
   .profile-panel,

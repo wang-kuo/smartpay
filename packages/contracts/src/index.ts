@@ -53,6 +53,17 @@ export const financialGoalContextSchema = z.object({
   goalImpact: z.string()
 });
 
+export const consumptionHistoryItemSchema = z.object({
+  historyId: z.string().min(1),
+  category: categorySchema,
+  merchantName: z.string().min(1),
+  amount: z.number().nonnegative(),
+  currency: z.string().min(3).max(3),
+  decision: decisionSchema,
+  createdAt: z.string().datetime(),
+  signals: z.array(z.string())
+});
+
 export const authorizationPolicySchema = z.object({
   authorizationId: z.string().min(1),
   type: z.enum(["standing", "temporary"]),
@@ -154,6 +165,24 @@ export const aiFitCheckResultSchema = z.object({
   explanation: z.string()
 });
 
+export const demoUserIntentAnalysisSchema = z.object({
+  intent: z.literal("japan_trip"),
+  normalizedRequest: z.string().min(1),
+  category: categorySchema,
+  travelWindow: z.string().nullable(),
+  budget: moneySchema.nullable(),
+  confidence: z.enum(["high", "medium", "low"]),
+  userFacingSummary: z.string().min(1),
+  fitCheck: aiFitCheckResultSchema
+});
+
+export const interactiveDecisionLlmStatusSchema = z.object({
+  provider: z.enum(["deepseek", "deterministic_fallback"]),
+  model: z.string(),
+  usedDeepSeek: z.boolean(),
+  fallbackReason: z.string().optional()
+});
+
 export const decisionResultSchema = z.object({
   decision: decisionSchema,
   reason: z.string(),
@@ -200,6 +229,7 @@ export const demoScenarioSchema = z.object({
   now: z.string().datetime(),
   profile: userBehaviorProfileSchema,
   goalContext: financialGoalContextSchema,
+  consumptionHistory: z.array(consumptionHistoryItemSchema).default([]),
   authorization: authorizationPolicySchema,
   consumptionRequest: consumptionRequestSchema,
   quotes: quoteResultSchema,
@@ -217,6 +247,7 @@ export const demoScenarioSchema = z.object({
 export const demoDecisionFlowResponseSchema = traceEnvelopeSchema.extend({
   profile: userBehaviorProfileSchema,
   goalContext: financialGoalContextSchema,
+  consumptionHistory: z.array(consumptionHistoryItemSchema).optional(),
   authorization: authorizationPolicySchema,
   request: consumptionRequestSchema,
   quotes: quoteResultSchema,
@@ -236,6 +267,46 @@ export const demoDecisionFlowResponseSchema = traceEnvelopeSchema.extend({
     .optional()
 });
 
+export const demoInteractiveDecisionRequestSchema = z.object({
+  email: z.string().email(),
+  message: z.string().min(3).max(1000),
+  scenario: z.literal("japan_trip").default("japan_trip"),
+  conversationHistory: z
+    .array(
+      z.object({
+        role: z.enum(["user", "assistant"]),
+        content: z.string().min(1).max(1000)
+      })
+    )
+    .max(12)
+    .default([])
+});
+
+export const demoAuthSessionRequestSchema = z.object({
+  email: z.string().email(),
+  password: z.string().optional()
+});
+
+export const demoAuthRoleSchema = z.enum(["user", "admin"]);
+
+export const demoAuthSessionResponseSchema = traceEnvelopeSchema.extend({
+  session: z.object({
+    email: z.string().email(),
+    role: demoAuthRoleSchema,
+    adminToken: z.string().optional()
+  })
+});
+
+export const demoInteractiveDecisionResponseSchema = demoDecisionFlowResponseSchema.extend({
+  interaction: z.object({
+    email: z.string().email(),
+    message: z.string(),
+    summary: z.string().min(1),
+    analysis: demoUserIntentAnalysisSchema.optional(),
+    llm: interactiveDecisionLlmStatusSchema.optional()
+  })
+});
+
 export type AppMode = z.infer<typeof appModeSchema>;
 export type ConsumptionDecision = z.infer<typeof decisionSchema>;
 export type AIFitCheck = z.infer<typeof fitCheckSchema>;
@@ -244,6 +315,7 @@ export type ConsumptionCategory = z.infer<typeof categorySchema>;
 export type ErrorResponse = z.infer<typeof errorResponseSchema>;
 export type UserBehaviorProfile = z.infer<typeof userBehaviorProfileSchema>;
 export type FinancialGoalContext = z.infer<typeof financialGoalContextSchema>;
+export type ConsumptionHistoryItem = z.infer<typeof consumptionHistoryItemSchema>;
 export type AuthorizationPolicy = z.infer<typeof authorizationPolicySchema>;
 export type RuleCheck = z.infer<typeof ruleCheckSchema>;
 export type AuthorizationEvaluation = z.infer<typeof authorizationEvaluationSchema>;
@@ -251,6 +323,8 @@ export type ConsumptionRequest = z.infer<typeof consumptionRequestSchema>;
 export type QuoteResult = z.infer<typeof quoteResultSchema>;
 export type MockServicePayloads = z.infer<typeof mockServicePayloadsSchema>;
 export type AIFitCheckResult = z.infer<typeof aiFitCheckResultSchema>;
+export type DemoUserIntentAnalysis = z.infer<typeof demoUserIntentAnalysisSchema>;
+export type InteractiveDecisionLlmStatus = z.infer<typeof interactiveDecisionLlmStatusSchema>;
 export type DecisionResult = z.infer<typeof decisionResultSchema>;
 export type ExecutionResult = z.infer<typeof executionResultSchema>;
 export type FeedbackRecord = z.infer<typeof feedbackRecordSchema>;
@@ -258,4 +332,9 @@ export type EventLogRecord = z.infer<typeof eventLogRecordSchema>;
 export type DemoScenario = z.infer<typeof demoScenarioSchema>;
 export type DemoDecisionFlowRequest = z.infer<typeof demoDecisionFlowRequestSchema>;
 export type DemoDecisionFlowResponse = z.infer<typeof demoDecisionFlowResponseSchema>;
+export type DemoAuthRole = z.infer<typeof demoAuthRoleSchema>;
+export type DemoAuthSessionRequest = z.infer<typeof demoAuthSessionRequestSchema>;
+export type DemoAuthSessionResponse = z.infer<typeof demoAuthSessionResponseSchema>;
+export type DemoInteractiveDecisionRequest = z.infer<typeof demoInteractiveDecisionRequestSchema>;
+export type DemoInteractiveDecisionResponse = z.infer<typeof demoInteractiveDecisionResponseSchema>;
 export type DemoDecisionFlowErrorResponse = z.infer<typeof errorResponseSchema>;
