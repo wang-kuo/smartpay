@@ -1,5 +1,9 @@
 import { OpenAPIRegistry, OpenApiGeneratorV3 } from "@asteasolutions/zod-to-openapi";
-import { demoDecisionFlowRequestSchema, demoDecisionFlowResponseSchema } from "./src";
+import {
+  demoDecisionFlowRequestSchema,
+  demoDecisionFlowResponseSchema,
+  errorResponseSchema
+} from "./src";
 
 const registry = new OpenAPIRegistry();
 
@@ -22,6 +26,14 @@ registry.registerPath({
       content: {
         "application/json": {
           schema: demoDecisionFlowResponseSchema
+        }
+      }
+    },
+    400: {
+      description: "Invalid request.",
+      content: {
+        "application/json": {
+          schema: errorResponseSchema
         }
       }
     }

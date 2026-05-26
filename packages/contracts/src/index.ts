@@ -3,6 +3,9 @@ import { z } from "zod";
 export const appModeSchema = z.enum(["debug", "release"]);
 export const decisionSchema = z.enum(["allow", "ask", "deny"]);
 export const fitCheckSchema = z.enum(["pass", "caution", "fail"]);
+export const demoDecisionFlowVariantSchema = z
+  .enum(["allow", "ask", "deny", "missing_fit_check"])
+  .default("allow");
 export const categorySchema = z.enum([
   "Daily",
   "Travel",
@@ -14,6 +17,14 @@ export const categorySchema = z.enum([
 
 export const traceEnvelopeSchema = z.object({
   traceId: z.string().min(1)
+});
+
+export const errorResponseSchema = traceEnvelopeSchema.extend({
+  error: z.object({
+    code: z.string().min(1),
+    message: z.string().min(1),
+    details: z.array(z.string()).optional()
+  })
 });
 
 export const moneySchema = z.object({
@@ -59,6 +70,28 @@ export const authorizationPolicySchema = z.object({
   executionMode: z.enum(["manual_only", "auto_under_threshold", "manual_or_auto_by_amount"])
 });
 
+export const ruleCheckSchema = z.object({
+  code: z.enum([
+    "authorization_exists",
+    "authorization_active",
+    "category_allowed",
+    "currency_allowed",
+    "single_amount_limit",
+    "total_amount_limit",
+    "frequency_limit",
+    "valid_time_window",
+    "execution_mode_allowed"
+  ]),
+  passed: z.boolean(),
+  message: z.string()
+});
+
+export const authorizationEvaluationSchema = z.object({
+  passed: z.boolean(),
+  reasons: z.array(z.string()),
+  checks: z.array(ruleCheckSchema)
+});
+
 export const consumptionRequestSchema = z.object({
   requestId: z.string().min(1),
   userId: z.string().min(1),
@@ -86,6 +119,32 @@ export const quoteResultSchema = z.object({
       high: z.number().nonnegative()
     }),
     signal: z.string()
+  })
+});
+
+export const mockServicePayloadsSchema = z.object({
+  merchant: z.object({
+    traceId: z.string().min(1),
+    quoteId: z.string().min(1),
+    merchantName: z.string().min(1),
+    amount: z.number().nonnegative(),
+    currency: z.string().min(3).max(3),
+    isExecutable: z.boolean()
+  }),
+  consumerAgentNetwork: z.object({
+    traceId: z.string().min(1),
+    marketAverage: z.number().nonnegative(),
+    priceRange: z.object({
+      low: z.number().nonnegative(),
+      high: z.number().nonnegative()
+    }),
+    signal: z.string().min(1)
+  }),
+  wallet: z.object({
+    traceId: z.string().min(1),
+    simulated: z.literal(true),
+    paymentStatus: z.enum(["not_started", "simulated_paid", "blocked"]),
+    walletPaymentId: z.string().nullable()
   })
 });
 
@@ -120,14 +179,20 @@ export const feedbackRecordSchema = z.object({
 export const eventLogRecordSchema = z.object({
   eventId: z.string(),
   traceId: z.string(),
+  userId: z.string(),
+  requestId: z.string().nullable(),
+  authorizationId: z.string().nullable(),
   type: z.string(),
   message: z.string(),
+  payload: z.record(z.string(), z.unknown()),
+  redacted: z.boolean(),
   createdAt: z.string()
 });
 
 export const demoDecisionFlowRequestSchema = z.object({
   userId: z.string().default("user_001"),
   scenario: z.literal("japan_trip").default("japan_trip"),
+  variant: demoDecisionFlowVariantSchema,
   request: z.string().min(1).default("Plan and book a Japan trip for 5-7 days within S$2000-2500.")
 });
 
@@ -140,7 +205,13 @@ export const demoScenarioSchema = z.object({
   quotes: quoteResultSchema,
   fitCheck: aiFitCheckResultSchema,
   execution: executionResultSchema,
-  feedback: feedbackRecordSchema
+  feedback: feedbackRecordSchema,
+  variants: z
+    .object({
+      askFitCheck: aiFitCheckResultSchema,
+      denyRequest: consumptionRequestSchema
+    })
+    .optional()
 });
 
 export const demoDecisionFlowResponseSchema = traceEnvelopeSchema.extend({
@@ -158,7 +229,9 @@ export const demoDecisionFlowResponseSchema = traceEnvelopeSchema.extend({
     .object({
       hardRulesPassed: z.boolean(),
       hardRuleReasons: z.array(z.string()),
-      mode: appModeSchema
+      mode: appModeSchema,
+      ruleEvaluation: authorizationEvaluationSchema,
+      mockServices: mockServicePayloadsSchema
     })
     .optional()
 });
@@ -166,16 +239,23 @@ export const demoDecisionFlowResponseSchema = traceEnvelopeSchema.extend({
 export type AppMode = z.infer<typeof appModeSchema>;
 export type ConsumptionDecision = z.infer<typeof decisionSchema>;
 export type AIFitCheck = z.infer<typeof fitCheckSchema>;
+export type DemoDecisionFlowVariant = z.infer<typeof demoDecisionFlowVariantSchema>;
 export type ConsumptionCategory = z.infer<typeof categorySchema>;
+export type ErrorResponse = z.infer<typeof errorResponseSchema>;
 export type UserBehaviorProfile = z.infer<typeof userBehaviorProfileSchema>;
 export type FinancialGoalContext = z.infer<typeof financialGoalContextSchema>;
 export type AuthorizationPolicy = z.infer<typeof authorizationPolicySchema>;
+export type RuleCheck = z.infer<typeof ruleCheckSchema>;
+export type AuthorizationEvaluation = z.infer<typeof authorizationEvaluationSchema>;
 export type ConsumptionRequest = z.infer<typeof consumptionRequestSchema>;
 export type QuoteResult = z.infer<typeof quoteResultSchema>;
+export type MockServicePayloads = z.infer<typeof mockServicePayloadsSchema>;
 export type AIFitCheckResult = z.infer<typeof aiFitCheckResultSchema>;
 export type DecisionResult = z.infer<typeof decisionResultSchema>;
 export type ExecutionResult = z.infer<typeof executionResultSchema>;
 export type FeedbackRecord = z.infer<typeof feedbackRecordSchema>;
 export type EventLogRecord = z.infer<typeof eventLogRecordSchema>;
 export type DemoScenario = z.infer<typeof demoScenarioSchema>;
+export type DemoDecisionFlowRequest = z.infer<typeof demoDecisionFlowRequestSchema>;
 export type DemoDecisionFlowResponse = z.infer<typeof demoDecisionFlowResponseSchema>;
+export type DemoDecisionFlowErrorResponse = z.infer<typeof errorResponseSchema>;
